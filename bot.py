@@ -1,16 +1,31 @@
-import asyncio, json, os, websockets
+import asyncio, json, os, websockets, threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 TOKEN = os.getenv("DERIV_TOKEN")
 APP_ID = 1089
+PORT = int(os.getenv("PORT", 10000))
+
+# Fake web server so Render sees an open port
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running")
+    def log_message(self, *args):
+        pass
+
+def run_server():
+    HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+
+threading.Thread(target=run_server, daemon=True).start()
+print(f"Web server started on port {PORT}")
 
 async def main():
-    print(f"Token loaded? {bool(TOKEN)} Length: {len(TOKEN) if TOKEN else 0}")
+    print(f"Token loaded? {bool(TOKEN)}")
     if not TOKEN:
-        print("ERROR: DERIV_TOKEN missing in Render Environment!")
+        print("ERROR: DERIV_TOKEN missing!")
         return
-
     url = f"wss://ws.derivws.com/websockets/v3?app_id={APP_ID}"
-    
     while True:
         try:
             print("Connecting to Deriv...")
@@ -21,7 +36,6 @@ async def main():
                     print("Authorize FAILED:", auth["error"])
                     await asyncio.sleep(10)
                     continue
-                
                 print("Authorized as:", auth.get("authorize", {}).get("loginid"))
                 print("Bot is running - waiting for signal...")
                 while True:
