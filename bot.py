@@ -5,7 +5,7 @@ import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from collections import deque
 import websocket
-
+import websocket    <- NEW, no S - CORRECT
 def log(msg):
     print(msg, flush=True)
 
