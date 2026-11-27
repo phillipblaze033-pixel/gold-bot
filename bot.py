@@ -33,10 +33,10 @@ async def send(ws, data):
 
 async def main():
     log(f"Starting Gold Scalper - {SYMBOL} Stake ${STAKE}")
-    url = f"wss://ws.deriv.com/websockets/v3?app_id={APP_ID}"
+    url = f"wss://ws.derivws.com/websockets/v3?app_id={APP_ID}"
     while True:
         try:
-            async with websockets.connect(url) as ws:
+          async with websockets.connect(url, extra_headers={"Origin": "https://app.deriv.com", "User-Agent": "Mozilla/5.0"}) as ws:
                 auth = await send(ws, {"authorize": TOKEN})
                 if "error" in auth:
                     log(f"Auth failed: {auth['error']}")
