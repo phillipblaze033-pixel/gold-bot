@@ -1,6 +1,11 @@
-import asyncio, json, os, sys, websockets, threading, time
+import asyncio
+import json
+import os
+import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from collections import deque
+import websockets
 
 def log(msg):
     print(msg, flush=True)
@@ -11,7 +16,7 @@ PORT = int(os.getenv("PORT", 10000))
 SYMBOL = "frxXAUUSD"
 STAKE = 0.35
 
-log(f"=== BOT STARTING ===")
+log("=== BOT STARTING ===")
 log(f"TOKEN EXISTS: {bool(TOKEN)}")
 log(f"SYMBOL: {SYMBOL}")
 
@@ -25,6 +30,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def run_server():
     HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+
 threading.Thread(target=run_server, daemon=True).start()
 
 async def send(ws, data):
@@ -34,13 +40,15 @@ async def send(ws, data):
 async def main():
     log(f"Starting Gold Scalper - {SYMBOL} Stake ${STAKE}")
     url = f"wss://ws.derivws.com/websockets/v3?app_id={APP_ID}"
+    headers = {"Origin": "https://app.deriv.com", "User-Agent": "Mozilla/5.0"}
     while True:
         try:
-          async with websockets.connect(url, additional_headers={"Origin": "https://app.deriv.com", "User-Agent": "Mozilla/5.0"} as ws:
+            async with websockets.connect(url, additional_headers=headers) as ws:
                 auth = await send(ws, {"authorize": TOKEN})
                 if "error" in auth:
                     log(f"Auth failed: {auth['error']}")
-                    await asyncio.sleep(10); continue
+                    await asyncio.sleep(10)
+                    continue
                 log(f"Authorized as: {auth['authorize']['loginid']}")
                 await ws.send(json.dumps({"ticks": SYMBOL, "subscribe": 1}))
                 prices = deque(maxlen=50)
@@ -67,10 +75,12 @@ async def main():
                     log(f"Signal {signal} | Price {price} Fast {fast:.2f} Slow {slow:.2f}")
                     prop = await send(ws, {"proposal": 1, "amount": STAKE, "basis": "stake", "contract_type": signal, "currency": "USD", "duration": 5, "duration_unit": "t", "symbol": SYMBOL})
                     if "error" in prop:
-                        log(f"Proposal error: {prop['error']}"); continue
+                        log(f"Proposal error: {prop['error']}")
+                        continue
                     buy = await send(ws, {"buy": prop["proposal"]["id"], "price": STAKE})
                     if "error" in buy:
-                        log(f"Buy error: {buy['error']}"); continue
+                        log(f"Buy error: {buy['error']}")
+                        continue
                     log(f"BOUGHT {signal} ID {buy['buy']['contract_id']}")
                     in_trade = True
                     last_trade = time.time()
