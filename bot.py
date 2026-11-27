@@ -33,7 +33,7 @@ async def send(ws, data):
 
 async def main():
     log(f"Starting Gold Scalper - {SYMBOL} Stake ${STAKE}")
-    url = f"wss://ws.derivws.com/websockets/v3?app_id={APP_ID}"
+    url = f"wss://ws.deriv.com/websockets/v3?app_id={APP_ID}"
     while True:
         try:
             async with websockets.connect(url) as ws:
